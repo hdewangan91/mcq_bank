@@ -1,0 +1,1 @@
+[{"q":"<p>In WPF, if the value of data is updated, then which of the following modes of the <strong>UpdateSourceTrigger</strong> property is used to update data?</p>","a":[{"id":818165,"option":"Default","correct":false},{"id":818166,"option":"PropertyChanged","correct":true},{"id":818167,"option":"LastFocus","correct":false},{"id":818168,"option":"Explicit","correct":false}]}]

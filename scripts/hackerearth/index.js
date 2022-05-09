@@ -1,34 +1,33 @@
 import fetch from 'node-fetch';
 import fs from 'fs';
-import _ from 'lodash';
-import cliProgress from 'cli-progress';
-import { getTags } from '../../helpers.js';
+import { getTags, sleep, batchRun } from '../../helpers.js';
 
-const limit = 10;
-let tElems = Infinity;
-let start = 0;
-let questions = [];
-let iData = [];
 
-const tags = getTags();
+const tags = getTags()
 
 for (let tag of tags) {
-    console.log("TAG -> ", tag);
+    let start = 0;
+    let tElems = Infinity;
+    const limit = 10;
+    let questions = [];
+
     while (tElems > questions.length) {
         let { total_count, problems_data } = await getQuestions(tag, start, limit);
         tElems = Math.min(total_count, tElems)
         if (tElems == 0) {
             break;
         }
-        console.log(`Get -> ${start} - ${start + limit}`, total_count);
+        
         questions = [...questions, ...problems_data]
         start += limit;
     }
-    if (tElems == 0) break;
-    let iData = await batchRun(questions.map(q => q.id), 20, getDetailQuestions)
+    console.log(`Got TAG ${tag} -> `, tElems);
+    if (tElems == 0) continue;
+    let iData = await batchRun(questions.map(q => q.id), 1, getDetailQuestions)
     fs.writeFile(`./res/${tag}.json`, JSON.stringify(iData), 'utf8', (resp) => {
         console.log(resp);
     });
+    await sleep(5000);
 }
 
 async function getQuestions(tag, start, limit) {
@@ -84,26 +83,3 @@ async function getDetailQuestions(id) {
         a: resp.options_translated
     }
 }
-
-async function batchRun(arr, num, fn) {
-    let startTime = Date.now();
-    const chunks = _.chunk(arr, num);
-    let results = [], timers = [];
-    const bar1 = new cliProgress.SingleBar({stopOnComplete: true, clearOnComplete: true, hideCursor: true}, cliProgress.Presets.shades_classic);
-    bar1.start(arr.length, 0);
-    let doneJobs = 0;
-    for (let [i, chunk] of chunks.entries()) {
-      let cst = Date.now();
-      let a = await Promise.all(chunk.map(fn))
-      results = [...results, ...a];
-      timers.push(Date.now() - cst);
-      doneJobs += chunk.length;
-      bar1.update(doneJobs);
-    }  
-    console.log('\x1b[36m%s\x1b[0m', `
-      Total Chunks: ${chunks.length}
-      Total Process Time: ${Date.now() - startTime} ms
-      Avg Chunk Time: ${parseFloat(_.mean(timers).toFixed(2))} ms
-    `);
-    return results;
-  }

@@ -1,3 +1,7 @@
+import _ from 'lodash';
+import cliProgress from 'cli-progress';
+
+
 const TAGS = [
     ".NET",
     ".NET Core",
@@ -907,3 +911,28 @@ const TAGS = [
   export function getTags() {
       return TAGS
   }
+
+  export const sleep = async ms => new Promise(r => setTimeout(r, ms));
+
+  export async function batchRun(arr, num, fn) {
+    let startTime = Date.now();
+    const chunks = _.chunk(arr, num);
+    let results = [], timers = [];
+    const bar1 = new cliProgress.SingleBar({stopOnComplete: true, clearOnComplete: true, hideCursor: true}, cliProgress.Presets.shades_classic);
+    bar1.start(arr.length, 0);
+    let doneJobs = 0;
+    for (let [i, chunk] of chunks.entries()) {
+      let cst = Date.now();
+      let a = await Promise.all(chunk.map(fn))
+      results = [...results, ...a];
+      timers.push(Date.now() - cst);
+      doneJobs += chunk.length;
+      bar1.update(doneJobs);
+    }  
+    console.log('\x1b[36m%s\x1b[0m', `
+      Total Chunks: ${chunks.length}
+      Total Process Time: ${Date.now() - startTime} ms
+      Avg Chunk Time: ${parseFloat(_.mean(timers).toFixed(2))} ms
+    `);
+    return results;
+}

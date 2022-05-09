@@ -5,6 +5,7 @@ import fs from "fs";
 import express from "express";
 import cookieParser from 'cookie-parser';
 import bodyParser from "body-parser";
+import { getTags } from "./helpers.js";
 
 let app = express();
 app.use(bodyParser.json({limit: "100mb"}));
@@ -27,6 +28,11 @@ console.log("Setting up routing...");
 
 // app.use(cors());
 app.set('case sensitive routing', true);
+
+app.get("/", (req, res, next) => {
+    let tags = getTags();
+    res.render("home", { tags })
+});
 
 app.get("/learn/:mod", (req, res, next) => {
     const mod = req.params.mod;
